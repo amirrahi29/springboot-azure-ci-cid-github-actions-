@@ -10,9 +10,10 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# LB port 80 → pod 8080 (Spring Boot)
 service:
   type: LoadBalancer
-  port: 8080
+  port: 80
   targetPort: 8080
   annotations: {}
 
@@ -42,6 +43,13 @@ podAnnotations: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  periodSeconds: 10
+  failureThreshold: 30
 
 livenessProbe:
   httpGet:
