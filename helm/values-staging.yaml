@@ -1,0 +1,33 @@
+# Staging — git branch `staging` → CI namespace `staging` → image tag `staging-<sha>` → yeh file: helm/values-staging.yaml
+# Push `staging` par: .github/workflows/chat-app.yml → ACR → helm upgrade -f helm/values-staging.yaml
+# (Dev jaisa sizing: 1 pod, halki resources)
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+podAnnotations:
+  environment: staging
+
+service:
+  type: LoadBalancer
+
+ingress:
+  enabled: false
+  className: nginx
+  hosts:
+    - host: app-staging.mergeai.in
+      paths:
+        - path: /
+          pathType: Prefix
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3

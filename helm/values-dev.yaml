@@ -1,0 +1,32 @@
+# Dev — git branch `dev` → CI namespace `dev` → image tag `dev-<sha>` → yeh file: helm/values-dev.yaml
+# Push `dev` par: .github/workflows/chat-app.yml → ACR → helm upgrade -f helm/values-dev.yaml
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+podAnnotations:
+  environment: dev
+
+service:
+  type: LoadBalancer
+
+ingress:
+  enabled: false
+  className: nginx
+  hosts:
+    - host: app-dev.mergeai.in
+      paths:
+        - path: /
+          pathType: Prefix
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3

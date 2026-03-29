@@ -1,0 +1,58 @@
+# Spring Boot — CI: helm/values-<dev|staging|uat>.yaml
+replicaCount: 2
+
+image:
+  repository: chatappregsistry.azurecr.io/chat-app
+  pullPolicy: IfNotPresent
+  tag: "dev-latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: LoadBalancer
+  port: 8080
+  targetPort: 8080
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts: []
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: ""
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 20
+  periodSeconds: 5

@@ -1,0 +1,10 @@
+.git
+.github
+helm
+.gradle
+build
+*.md
+.DS_Store
+.env
+.env.*
+!.env.example
