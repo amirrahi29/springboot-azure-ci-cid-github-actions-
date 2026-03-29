@@ -10,9 +10,10 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# External port 80 → container 8080 (Spring Boot); probes use named port "http" → targetPort
 service:
   type: LoadBalancer
-  port: 8080
+  port: 80
   targetPort: 8080
   annotations: {}
 
@@ -42,6 +43,14 @@ podAnnotations: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+# JVM cold start: delay liveness until app is up (Spring Boot + actuator)
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  periodSeconds: 10
+  failureThreshold: 30
 
 livenessProbe:
   httpGet:

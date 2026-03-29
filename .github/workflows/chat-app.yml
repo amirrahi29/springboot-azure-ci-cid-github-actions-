@@ -1,4 +1,6 @@
-# Multi-env: branch = namespace = values file (dev / staging / uat)
+# Multi-env: push branch dev | staging | uat → build Spring Boot image → ACR → Helm deploy to AKS
+# Prereqs: GitHub secret AZURE_CREDENTIALS (service principal JSON), ACR name below, AKS can pull from ACR
+#   (e.g. az aks update -n <cluster> -g <rg> --attach-acr <acrName>)
 name: Build, Push & Deploy to AKS
 
 on:
