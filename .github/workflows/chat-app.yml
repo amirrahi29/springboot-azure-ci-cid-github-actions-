@@ -1,4 +1,5 @@
-# Multi-env: branch = namespace = values file (dev / staging / uat)
+# Push dev | staging | uat → Docker build/push → Helm deploy (ek hi workflow, ek job)
+# Prereqs: AZURE_CREDENTIALS secret; AKS ↔ ACR pull (e.g. --attach-acr)
 name: Build, Push & Deploy to AKS
 
 on:
@@ -9,18 +10,15 @@ on:
       - uat
 
 env:
+  DOCKER_BUILDKIT: 1
   ACR_NAME: chatappregsistry
   IMAGE_NAME: chat-app
   AKS_CLUSTER_NAME: ChatAppCluster
   AKS_RESOURCE_GROUP: ChatResourceGroup
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.meta.outputs.image_tag }}
-      namespace: ${{ steps.meta.outputs.namespace }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,13 +29,11 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Set image tag and namespace
-        id: meta
         run: |
           BRANCH=${GITHUB_REF#refs/heads/}
           SHORT_SHA=$(git rev-parse --short HEAD)
           echo "IMAGE_TAG=${BRANCH}-${SHORT_SHA}" >> $GITHUB_ENV
-          echo "image_tag=${BRANCH}-${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "namespace=${BRANCH}" >> $GITHUB_OUTPUT
+          echo "DEPLOY_NAMESPACE=${BRANCH}" >> $GITHUB_ENV
 
       - name: Login to ACR
         run: az acr login --name $ACR_NAME
@@ -49,23 +45,6 @@ jobs:
 
       - name: Push image to ACR
         run: "docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"
-
-      - name: Image summary
-        run: |
-          echo "Pushed: $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-and-push
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Set AKS kubeconfig
         uses: azure/aks-set-context@v3
@@ -80,17 +59,15 @@ jobs:
 
       - name: Helm upgrade (chat-app)
         run: |
-          NS='${{ needs.build-and-push.outputs.namespace }}'
           helm upgrade --install chat-app ./helm \
-            --namespace "$NS" \
+            --namespace "$DEPLOY_NAMESPACE" \
             --create-namespace \
-            -f "helm/values-${NS}.yaml" \
+            -f "helm/values-${DEPLOY_NAMESPACE}.yaml" \
             --set image.repository=${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ needs.build-and-push.outputs.image_tag }} \
+            --set image.tag=$IMAGE_TAG \
             --wait --timeout 5m
 
-      - name: Deploy summary
+      - name: Summary
         run: |
-          echo "Namespace: ${{ needs.build-and-push.outputs.namespace }}"
-          echo "Chart: ./helm | Release: chat-app"
-          echo "Tag: ${{ needs.build-and-push.outputs.image_tag }}"
+          echo "Namespace: $DEPLOY_NAMESPACE"
+          echo "Image: $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"

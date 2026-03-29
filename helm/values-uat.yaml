@@ -1,3 +1,19 @@
+# UAT — git branch `uat` → CI namespace `uat` → image tag `uat-<sha>` → yeh file: helm/values-uat.yaml
+# Push `uat` par: .github/workflows/chat-app.yml → ACR → helm upgrade -f helm/values-uat.yaml
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+podAnnotations:
+  environment: uat
+
 service:
   type: LoadBalancer
 
@@ -13,4 +29,4 @@ ingress:
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 3 
+  maxReplicas: 3
